@@ -1,0 +1,3 @@
+{"name":"Michael", "cities":["palo alto", "menlo park"], "schools":[{"sname":"stanford", "year":2010}, {"sname":"berkeley", "year":2012}]}
+{"name":"Andy", "cities":["santa cruz"], "schools":[{"sname":"ucsb", "year":2011}]}
+{"name":"Justin", "cities":["portland"], "schools":[{"sname":"berkeley", "year":2014}]}
