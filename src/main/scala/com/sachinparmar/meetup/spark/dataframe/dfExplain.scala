@@ -17,6 +17,7 @@ object dfExplain extends App {
 
   val sc = init.sparkContext
   val sqlContext = init.sqlContext(sc)
+  import sqlContext.implicits._
 
   val dataDir = init.resourcePath
 
@@ -24,46 +25,31 @@ object dfExplain extends App {
 
   // ---------------------------------------------------------------------------------------
 
-  println("\n\n [#1] logical and physical plans \n\n")
-
   // df
-  val df = empDF
-    .join(registerDF, registerDF("emp_id") === empDF("emp_id"))
-    //.select(empDF("emp_id"), registerDF("dept_id"), empDF("emp_name"), empDF("salary"), empDF("age"))
-    .select(empDF("emp_id"), registerDF("dept_id"), upper(lower(empDF("emp_name"))).as("emp_name"), empDF("salary"), empDF("age"))
-    .join(deptDF, registerDF("dept_id") === deptDF("dept_id"))
-    .select("emp_id", "salary", "dept_name", "emp_name")
-    .filter("salary >= 2000")
-    .filter("salary < 5000")
+  val df = empDF.
+    join(registerDF, registerDF("emp_id") === empDF("emp_id")).
+    select(empDF("emp_id"), registerDF("dept_id"), upper(lower(empDF("emp_name"))).as("emp_name"), empDF("salary"), empDF("age")).
+    join(deptDF, registerDF("dept_id") === deptDF("dept_id")).
+    select("emp_id", "salary", "dept_name", "emp_name").
+    filter("salary >= 2000").
+    filter("salary < 5000")
 
-  utils.showPlans(df, show = false)
-
-  /*
-  df.queryExecution.logical.numberedTreeString
-  df.queryExecution.analyzed.numberedTreeString
-  df.queryExecution.withCachedData.numberedTreeString
-  df.queryExecution.optimizedPlan.numberedTreeString
-
-  df.queryExecution.sparkPlan.numberedTreeString
-  df.queryExecution.executedPlan.numberedTreeString
-  */
+  //utils.showPlans(df, show = false)
 
   // ---------------------------------------------------------------------------------------
 
-  println("\n\n [#2] logical and physical plans with cache \n\n")
-
   // cdf
-  val cdf = empDF
-    .cache
-    .join(registerDF, registerDF("emp_id") === empDF("emp_id"))
-    //.select(empDF("emp_id"), registerDF("dept_id"), empDF("emp_name"), empDF("salary"), empDF("age"))
-    .select(empDF("emp_id"), registerDF("dept_id"), upper(lower(empDF("emp_name"))).as("emp_name"), empDF("salary"), empDF("age"))
-    .join(deptDF, registerDF("dept_id") === deptDF("dept_id"))
-    .select("emp_id", "salary", "dept_name", "emp_name")
-    .filter("salary >= 2000")
-    .filter("salary < 5000")
+  val cdf = empDF.
+    cache().
+    join(registerDF, registerDF("emp_id") === empDF("emp_id")).
+    select(empDF("emp_id"), registerDF("dept_id"), upper(lower(empDF("emp_name"))).as("emp_name"), empDF("salary"), empDF("age")).
+    join(deptDF, registerDF("dept_id") === deptDF("dept_id")).
+    select("emp_id", "salary", "dept_name", "emp_name").
+    filter("salary >= 2000").
+    filter("salary < 5000")
 
   //utils.showPlans(cdf, show = false)
+  println("\n\n logical and physical plans with cache \n\n")
 
   println("\n DF analyzed : \n\n" +  df.queryExecution.analyzed.numberedTreeString)
   println("\n DF(Cache) analyzed : \n\n" + cdf.queryExecution.analyzed.numberedTreeString)

@@ -17,6 +17,7 @@ object dfSameOptimizationDfSql extends App {
 
   val sc = init.sparkContext
   val sqlContext = init.sqlContext(sc)
+  import sqlContext.implicits._
 
   val dataDir = init.resourcePath
 
@@ -24,18 +25,27 @@ object dfSameOptimizationDfSql extends App {
 
   // ---------------------------------------------------------------------------------------
 
-  println("\n\n [#3] sql and df - optimization \n\n")
+  println("\n\n sql and df - optimization \n\n")
 
   // df
+  /*
+  val df = empDF.
+    join(registerDF, registerDF("emp_id") === empDF("emp_id")).
+    select(empDF("emp_id"), registerDF("dept_id"), upper(lower(empDF("emp_name"))).as("emp_name"), empDF("salary"), empDF("age")).
+    join(deptDF, registerDF("dept_id") === deptDF("dept_id")).
+    select("emp_id", "salary", "dept_name", "emp_name").
+    filter("salary >= 2000").
+    filter("salary < 5000")
+  */
 
-  val df = empDF
-    .join(registerDF, registerDF("emp_id") === empDF("emp_id"))
-    //.select(empDF("emp_id"), registerDF("dept_id"), empDF("emp_name"), empDF("salary"), empDF("age"))
-    .select(empDF("emp_id"), registerDF("dept_id"), upper(lower(empDF("emp_name"))).as("emp_name"), empDF("salary"), empDF("age"))
-    .join(deptDF, registerDF("dept_id") === deptDF("dept_id"))
-    .select("emp_id", "salary", "dept_name", "emp_name")
-    .filter("salary >= 2000")
-    .filter("salary < 5000")
+  val df = empDF.
+    join(registerDF, registerDF("emp_id") === empDF("emp_id")).
+    select(empDF("emp_id"), registerDF("dept_id"), upper(lower(empDF("emp_name"))).as("emp_name"), empDF("salary"), empDF("age")).
+    as("x").
+    join(deptDF, $"x.dept_id" === deptDF("dept_id")).
+    select("emp_id", "salary", "dept_name", "emp_name").
+    filter("salary >= 2000").
+    filter("salary < 5000")
 
   // sql
 
@@ -47,7 +57,6 @@ object dfSameOptimizationDfSql extends App {
     "select emp_id, salary, dept_name, emp_name "
     +  "from deptTable join "
     +  "(select empTable.emp_id, registerTable.dept_id, upper(lower(empTable.emp_name)) as emp_name, empTable.salary, empTable.age "
-   // +  "(select empTable.emp_id, registerTable.dept_id, empTable.emp_name, empTable.salary, empTable.age "
     +  "from   empTable join registerTable "
     +  "where  empTable.emp_id = registerTable.emp_id) x "
     +  "where  x.dept_id = deptTable.dept_id "

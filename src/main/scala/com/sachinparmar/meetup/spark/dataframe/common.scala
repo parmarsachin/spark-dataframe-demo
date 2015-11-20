@@ -2,7 +2,7 @@ package com.sachinparmar.meetup.spark.dataframe
 
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.catalyst.optimizer.{DefaultOptimizer, Optimizer}
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, SQLContext}
@@ -11,32 +11,6 @@ import org.apache.spark.{SparkConf, SparkContext}
 /**
  * Created by sachinparmar on 16/11/15.
  */
-
-// custom optimizer with custom rules for tree transformation
-
-class MyOptimizer(rules: Map[String, Rule[LogicalPlan]], includeDefaultOptimizer: Boolean = false) extends Optimizer {
-
-  val my_batch = rules.map {
-    case (ruleName,rule) => Batch(ruleName, FixedPoint(100), rule)
-  }
-
-  var default_batches: Seq[Batch] = Seq()
-
-  if(includeDefaultOptimizer)
-  {
-      default_batches = DefaultOptimizer.batches.map(
-        batch => new Batch(batch.name, FixedPoint(100),batch.rules:_ *)
-      ).toSeq
-  }
-
-  val batches = default_batches ++ my_batch.toSeq ++ Nil
-}
-
-// custom sql context with custom optimizer
-
-class CustomSQLContext(sc: SparkContext, co: Optimizer) extends SQLContext(sc) {
-  override lazy val optimizer: Optimizer = co
-}
 
 object init {
 
@@ -102,25 +76,6 @@ object init {
 
     (empDF, deptDF, registerDF)
   }
-
-
-
-/*
-  def sampleDataFrame(sqlContext: SQLContext, dataDir: String): DataFrame = {
-    case class SampleSchema(id: Int, name: String, city: String)
-
-    val rdd = sqlContext.sparkContext.
-      textFile(dataDir + "sample-data.csv").
-      map(_.split(",")).
-      map(r => SampleSchema(r(0).toInt, r(1), r(2)))
-
-    import sqlContext.implicits._
-
-    val df = rdd.toDF("id", "name", "city")
-
-    df
-  }
-*/
 }
 
 object utils {
@@ -149,46 +104,28 @@ object utils {
   }
 }
 
-/*
-  init.logLevel
+// custom optimizer with custom rules for tree transformation
 
-  val sc = init.sparkContext
-  val sqlContext = init.sqlContext(sc)
-  import sqlContext.implicits._
+class CustomOptimizer(rules: Map[String, Rule[LogicalPlan]], includeDefaultOptimizer: Boolean = false) extends Optimizer {
 
-  val dataDir = init.resourcePath
+  val my_batch = rules.map {
+    case (ruleName,rule) => Batch(ruleName, FixedPoint(100), rule)
+  }
 
-  val df = init.sampleDataFrame(sc, sqlContext, dataDir)
-  val (empDF, deptDF, registerDF)  = init.sampleDataFrameForJoin(sqlContext, dataDir)
- */
+  var default_batches: Seq[Batch] = Seq()
 
+  if(includeDefaultOptimizer)
+  {
+    default_batches = DefaultOptimizer.batches.map(
+      batch => new Batch(batch.name, FixedPoint(100),batch.rules:_ *)
+    ).toSeq
+  }
 
-/*
-import org.apache.spark.sql.types._
+  val batches = default_batches ++ my_batch.toSeq ++ Nil
+}
 
-val dataDir = "/Users/sachinparmar/my/work/myGit/spark-dataframe-demo/src/main/resources/"
+// custom sql context with custom optimizer
 
-    val empDFSchema =
-      StructType(
-        StructField("emp_id", IntegerType, false) ::
-          StructField("emp_name", StringType, true) ::
-          StructField("salary", IntegerType, true) :: Nil)
-    val empDF = sqlContext.read.schema(empDFSchema).json(dataDir + "emp.json")
-
-    val deptDFSchema =
-      StructType(
-        StructField("dept_id", IntegerType, false) ::
-          StructField("dept_name", StringType, true) :: Nil)
-    val deptDF = sqlContext.read.schema(deptDFSchema).json(dataDir + "dept.json")
-
-    val registerDFSchema =
-      StructType(
-        StructField("emp_id", IntegerType, false) ::
-          StructField("dept_id", IntegerType, true) :: Nil)
-    val registerDF = sqlContext.read.schema(registerDFSchema).json(dataDir + "register.json")
-
-empDF.show
-deptDF.show
-registerDF.show
-
- */
+class CustomSQLContext(sc: SparkContext, co: Optimizer) extends SQLContext(sc) {
+  override lazy val optimizer: Optimizer = co
+}

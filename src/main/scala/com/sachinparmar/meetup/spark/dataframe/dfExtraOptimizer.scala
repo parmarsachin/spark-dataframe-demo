@@ -10,53 +10,48 @@ import org.apache.spark.sql.functions._
  */
 
 
-
 /*
 * 1. sqlContext with default optimizer
 * 2. custom sqlContext with custom optimizer
+* // includeDefaultOptimizer = false
 * 3. custom sqlContext with default + custom optimizer
+* // includeDefaultOptimizer = true
  */
 
-
-
-// main
-
 object dfExtraOptimizer extends App {
+
   init.logLevel()
 
   val sc = init.sparkContext
 
-  // 1. sqlContext with default optimizer
+  // run#1
 
   //val sqlContext = init.sqlContext(sc)
 
-  // 2. custom sqlContext with custom optimizer
-  // includeDefaultOptimizer = false
+  // run#2 - includeDefaultOptimizer = false
+  // run#3 - includeDefaultOptimizer = true
 
-  // 3. custom sqlContext with default + custom optimizer
-  // includeDefaultOptimizer = true
-
+  // custom optimizer
   // my optimizer
-  val co = new MyOptimizer(
+  val co = new CustomOptimizer(
     Map(
       "RuleRemoveFilter"            -> RuleRemoveFilter,
       "RuleCaseConversionSimplify"  -> RuleCaseConversionSimplify
     ),
-    includeDefaultOptimizer = true
+    includeDefaultOptimizer = false
   )
-
-  // custom optimizer
   val sqlContext = init.sqlContext(sc, co = co)
 
+  import sqlContext.implicits._
   val dataDir = init.resourcePath
   val (empDF, deptDF, registerDF)  = init.sampleDataFrameForJoin(sqlContext, dataDir, show = false)
 
   // df
   val df = empDF.
     join(registerDF, registerDF("emp_id") === empDF("emp_id")).
-    select(empDF("emp_id"), registerDF("dept_id"), upper(lower(empDF("emp_name"))).as("empname"), empDF("salary"), empDF("age")).
+    select(empDF("emp_id"), registerDF("dept_id"), upper(lower(empDF("emp_name"))).as("emp_name"), empDF("salary"), empDF("age")).
     join(deptDF, registerDF("dept_id") === deptDF("dept_id")).
-    select("emp_id", "salary", "dept_name", "empname").
+    select("emp_id", "salary", "dept_name", "emp_name").
     filter("salary >= 2000").
     filter("salary < 5000")
 

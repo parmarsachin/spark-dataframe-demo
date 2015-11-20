@@ -22,6 +22,7 @@ object dfOptimizations extends App {
 
   val sc = init.sparkContext
   val sqlContext = init.sqlContext(sc)
+  import sqlContext.implicits._
 
   val dataDir = init.resourcePath
 
@@ -30,18 +31,17 @@ object dfOptimizations extends App {
   // ---------------------------------------------------------------------------------------
 
   // df
-  val df = empDF
-    .join(registerDF, registerDF("emp_id") === empDF("emp_id"))
-    //.select(empDF("emp_id"), registerDF("dept_id"), empDF("emp_name"), empDF("salary"), empDF("age"))
-    .select(empDF("emp_id"), registerDF("dept_id"), upper(lower(empDF("emp_name"))).as("emp_name"), empDF("salary"), empDF("age"))
-    .join(deptDF, registerDF("dept_id") === deptDF("dept_id"))
-    .select("emp_id", "salary", "dept_name", "emp_name")
-    .filter("salary >= 2000")
-    .filter("salary < 5000")
+  val df = empDF.
+    join(registerDF, registerDF("emp_id") === empDF("emp_id")).
+    select(empDF("emp_id"), registerDF("dept_id"), upper(lower(empDF("emp_name"))).as("emp_name"), empDF("salary"), empDF("age")).
+    join(deptDF, registerDF("dept_id") === deptDF("dept_id")).
+    select("emp_id", "salary", "dept_name", "emp_name").
+    filter("salary >= 2000").
+    filter("salary < 5000")
 
   // ---------------------------------------------------------------------------------------
 
-  println("\n\n [#4] optimization provided by catalyst \n\n")
+  println("\n\n optimization provided by catalyst \n\n")
 
   val cf = df.
     filter("1=1")
@@ -49,5 +49,4 @@ object dfOptimizations extends App {
   println("\n DF  analyzed : \n\n" +  cf.queryExecution.analyzed.numberedTreeString)
 
   println("\n DF  optimizedPlan : \n\n" +  cf.queryExecution.optimizedPlan.numberedTreeString)
-
 }

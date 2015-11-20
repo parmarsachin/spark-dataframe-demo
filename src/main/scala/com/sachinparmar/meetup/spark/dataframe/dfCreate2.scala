@@ -51,15 +51,6 @@ object dfCreate2 extends App {
   df.show()
 
   //utils.showPlans(df)
-
-  // sample data frame creation
-  import sqlContext.implicits._
-
-  val df1 = sc.parallelize(Seq(1,2,3,4)).toDF("id")
-  df1.show()
-
-  val df2 = sqlContext.range(0, 100)
-  df2.show()
 }
 
 

@@ -8,10 +8,11 @@ object dfDQ extends App {
 
   val sc = init.sparkContext
   implicit val sqlContext = init.sqlContext(sc)
+  import sqlContext.implicits._
 
   implicit val dataDir = init.resourcePath
 
-  // Read from Sample.csv attached - usecase :  taxi drop and pickup time
+  // data
   val df = sqlContext.read
     .format("com.databricks.spark.csv")
     .option("header", "true")
@@ -21,8 +22,17 @@ object dfDQ extends App {
   // Get Count
   println("\n count: \n" + df.count)
 
-  // Evaluate Schema
+  // Schema - first level of defense
   df.printSchema()
+
+  /*
+    # of empties values
+    # of nulls,
+    Total # or records
+    # of unique values
+    If the field is a number field then get the Min, Max, Sum, and Avg for the column
+    The top-N most commonly appearing values along with their # of appearances (to derive their cardinality)
+   */
 
   // describe
   println("\n describe: \n")
@@ -32,13 +42,9 @@ object dfDQ extends App {
 
   // Elementary Data Quality checks
 
-  //df.as("df").filter($"df.pickup_longitude" < 0).count
   println(df.filter(df("pickup_longitude") < 0).count())
 
-  //val df1 = df.as("df").withColumn("ValidFlag", $"df.dropoff_datetime" < $"df.pickup_datetime")
   val df1 = df.withColumn("ValidFlag", df("dropoff_datetime") < df("pickup_datetime"))
-
-  //df1.as("df").filter($"df.ValidFlag" === false).count
   println(df1.filter(df1("ValidFlag") === false).count())
 
   //

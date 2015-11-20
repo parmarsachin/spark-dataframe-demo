@@ -1,8 +1,7 @@
 package com.sachinparmar.meetup.spark.dataframe
 
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.optimizer.Optimizer
-import org.apache.spark.sql.catalyst.plans.logical.{Project, Filter, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.functions._
 
@@ -22,6 +21,7 @@ object dfTreeTransformationRules extends App {
   val sc = init.sparkContext
   val sqlContext = init.sqlContext(sc)
 
+  import sqlContext.implicits._
   val dataDir = init.resourcePath
 
   val (empDF, deptDF, registerDF)  = init.sampleDataFrameForJoin(sqlContext, dataDir, show = false)
@@ -29,14 +29,13 @@ object dfTreeTransformationRules extends App {
   // ---------------------------------------------------------------------------------------
 
   // df
-  val df = empDF
-    .join(registerDF, registerDF("emp_id") === empDF("emp_id"))
-    //.select(empDF("emp_id"), registerDF("dept_id"), empDF("emp_name"), empDF("salary"), empDF("age"))
-    .select(empDF("emp_id"), registerDF("dept_id"), upper(lower(empDF("emp_name"))).as("emp_name"), empDF("salary"), empDF("age"))
-    .join(deptDF, registerDF("dept_id") === deptDF("dept_id"))
-    .select("emp_id", "salary", "dept_name", "emp_name")
-    .filter("salary >= 2000")
-    .filter("salary < 5000")
+  val df = empDF.
+    join(registerDF, registerDF("emp_id") === empDF("emp_id")).
+    select(empDF("emp_id"), registerDF("dept_id"), upper(lower(empDF("emp_name"))).as("emp_name"), empDF("salary"), empDF("age")).
+    join(deptDF, registerDF("dept_id") === deptDF("dept_id")).
+    select("emp_id", "salary", "dept_name", "emp_name").
+    filter("salary >= 2000").
+    filter("salary < 5000")
 
   // ---------------------------------------------------------------------------------------
 
@@ -48,7 +47,7 @@ object dfTreeTransformationRules extends App {
   val optimizedPlan = df.queryExecution.optimizedPlan
   println("\n optimizedPlan (provided by Spark): \n" + optimizedPlan.numberedTreeString)
 
-  // my rules
+  // custom rules
 
   // combine filter
   val optimizedPlan1 = RuleCombineFilter(analyzedPlan)

@@ -34,39 +34,38 @@ object dfExternalSources extends App {
     schema(csvSchema).
     load(dataDir + "sample-data.csv")
 
-  utils.showLogicalPlans(csvDF)
+  println("Schema (csvDF): ")
+  csvDF.printSchema()
+  println("Data (csvDF): ")
+  csvDF.show()
 
   // ------------------------------------------------------------------------------
 
   // json
   val jsonDF = sqlContext.
     read.
-    json(dataDir + "sample-data.json")
+    json(dataDir + "emp.json")
 
   println("Schema (jsonDF): ")
   jsonDF.printSchema()
   println("Data (jsonDF): ")
   jsonDF.show()
 
-  utils.showLogicalPlans(jsonDF)
-
   // save as parquet
   jsonDF.
     write.
     mode(SaveMode.Overwrite).
     format("parquet").
-    save(dataDir + "sample-data.parquet")
+    save(dataDir + "emp.parquet")
 
   // ------------------------------------------------------------------------------
 
   val parquetDF = sqlContext.
     read.
-    parquet(dataDir + "sample-data.parquet")
+    parquet(dataDir + "emp.parquet")
 
   println("Schema (parquetDF): ")
   parquetDF.printSchema()
   println("Data (parquetDF): ")
   parquetDF.show()
-
-  utils.showPlans(parquetDF)
 }
