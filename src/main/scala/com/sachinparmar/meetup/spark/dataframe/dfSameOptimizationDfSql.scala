@@ -69,3 +69,18 @@ object dfSameOptimizationDfSql extends App {
   println("\n DF  optimizedPlan : \n\n" +  df.queryExecution.optimizedPlan.numberedTreeString)
   println("\n SQL optimizedPlan : \n\n" + sql.queryExecution.optimizedPlan.numberedTreeString)
 }
+/*
+DF
+06 05 04
+03 (06 05 04) 07
+02 (03 (06 05 04) 07)
+01 (02 (03 (06 05 04) 07)) 08
+00 (01 (02 (03 (06 05 04) 07)) 08)
+
+SQL
+07 06 05
+04 (07 06 05) 08
+03 (04 (07 06 05) 08)
+01 (03 (04 (07 06 05) 08)) 02
+00 (01 (03 (04 (07 06 05) 08)) 02)
+*/

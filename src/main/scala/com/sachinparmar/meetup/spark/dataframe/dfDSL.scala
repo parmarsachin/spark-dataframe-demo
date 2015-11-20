@@ -6,6 +6,9 @@ import org.apache.spark.sql.types.{StringType, IntegerType, StructField, StructT
  * Created by sachinparmar on 16/11/15.
  */
 
+// api link
+// http://spark.apache.org/docs/latest/api/scala/#org.apache.spark.sql.DataFrame
+
 object dfDSL extends App {
 
   init.logLevel()
@@ -29,6 +32,15 @@ object dfDSL extends App {
   df.printSchema()
   println("Data (jsonDF): ")
   df.show()
+
+  df.collect()
+
+  df.cache()
+
+  df.unpersist()
+
+
+
 
   // ----------------------------------------------------------------------
 

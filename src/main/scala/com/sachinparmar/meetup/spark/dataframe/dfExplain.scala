@@ -20,6 +20,7 @@ object dfExplain extends App {
   import sqlContext.implicits._
 
   val dataDir = init.resourcePath
+  println("dataDir = " + dataDir)
 
   val (empDF, deptDF, registerDF)  = init.sampleDataFrameForJoin(sqlContext, dataDir, show = false)
 

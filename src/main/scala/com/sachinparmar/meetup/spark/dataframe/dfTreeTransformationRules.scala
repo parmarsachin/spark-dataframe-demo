@@ -13,7 +13,6 @@ import org.apache.spark.sql.functions._
 * apply transform rules on analysed plan to get the optimized plan
  */
 
-
 object dfTreeTransformationRules extends App {
 
   init.logLevel()
@@ -59,12 +58,43 @@ object dfTreeTransformationRules extends App {
 
   // ---------------------------------------------------------------------------------------
 
-  // combine filter
+  // scala representation of the tree (tree nodes)
+  // Multiply, Add, Literal are subclasses of TreeNode
+  // rule
+  // someFunction(tree#1) --> tree#2
+  // set of pattern matching functions that find and replace subtrees with a specific structure
+  // transform method applies a pattern matching function recursively on all nodes of the tree
+  // partial function -- it only needs to match to a subset of all possible input trees, skips other part of tree
+  // rules do not need to be modified as new types of operators are added to the system
 
+/*
+Tree representation of ..... Filter(c1, Filter(c2, restOfTheSubTree))
+
+           Filter
+          /      \
+         /        \
+        Filter    c1
+       / \
+      /   \
+     c2   restOfTheSubTree
+
+Tree representation of ..... Filter(And(c1, c2), restOfTheSubTree)
+
+           Filter
+          /      \
+         /        \
+        And    restOfTheSubTree
+       / \
+      /   \
+     c1    c2
+
+*/
+
+  // combine filter
   object RuleCombineFilter extends Rule[LogicalPlan]
   {
     override def apply(lp: LogicalPlan): LogicalPlan = lp transform {
-      case Filter(c1, Filter(c2, anything)) => Filter(Or(c1, c2), anything)
+      case Filter(c1, Filter(c2, restOfTheSubTree)) => Filter(And(c1, c2), restOfTheSubTree)
     }
   }
 

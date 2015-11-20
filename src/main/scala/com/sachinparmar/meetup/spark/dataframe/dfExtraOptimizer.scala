@@ -9,6 +9,9 @@ import org.apache.spark.sql.functions._
  * Created by sachinparmar on 18/11/15.
  */
 
+// default optimizer - where it is being plugged in spark - sql context
+// we need a way to change the optimizer - extend the SQLContext
+// create custom optimizer
 
 /*
 * 1. sqlContext with default optimizer
