@@ -5,7 +5,7 @@ package com.sachinparmar.meetup.spark.dataframe
  */
 
 /*
-* simple tree and transform example
+* simple example of tree, rule and transform method
 *
  */
 

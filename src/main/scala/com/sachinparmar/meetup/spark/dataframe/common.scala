@@ -1,7 +1,9 @@
 package com.sachinparmar.meetup.spark.dataframe
 
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.catalyst.optimizer.Optimizer
+import org.apache.spark.sql.catalyst.optimizer.{DefaultOptimizer, Optimizer}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan}
+import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.{SparkConf, SparkContext}
@@ -10,10 +12,30 @@ import org.apache.spark.{SparkConf, SparkContext}
  * Created by sachinparmar on 16/11/15.
  */
 
+// custom optimizer with custom rules for tree transformation
+
+class MyOptimizer(rules: Map[String, Rule[LogicalPlan]], includeDefaultOptimizer: Boolean = false) extends Optimizer {
+
+  val my_batch = rules.map {
+    case (ruleName,rule) => Batch(ruleName, FixedPoint(100), rule)
+  }
+
+  var default_batches: Seq[Batch] = Seq()
+
+  if(includeDefaultOptimizer)
+  {
+      default_batches = DefaultOptimizer.batches.map(
+        batch => new Batch(batch.name, FixedPoint(100),batch.rules:_ *)
+      ).toSeq
+  }
+
+  val batches = default_batches ++ my_batch.toSeq ++ Nil
+}
+
 // custom sql context with custom optimizer
 
-class CustomSQLContext(sc: SparkContext) extends SQLContext(sc) {
-  override lazy val optimizer: Optimizer = MyOptimizer
+class CustomSQLContext(sc: SparkContext, co: Optimizer) extends SQLContext(sc) {
+  override lazy val optimizer: Optimizer = co
 }
 
 object init {
@@ -31,13 +53,12 @@ object init {
   }
 
   // sql context / custom sql context
-  def sqlContext(sc: SparkContext, default: Boolean = true): SQLContext = {
-    if (default) {
+  def sqlContext(sc: SparkContext, co: Optimizer = null) = {
+    if (co == null) {
       new SQLContext(sc)
     }
-    else
-    {
-      new CustomSQLContext(sc)
+    else {
+      new CustomSQLContext(sc, co)
     }
   }
 

@@ -19,8 +19,6 @@ object dfCatalyst extends App {
 
   val (empDF, deptDF, registerDF)  = init.sampleDataFrameForJoin(sqlContext, dataDir, show = true)
 
-  df.queryExecution.analyzed
-
   // ---------------------------------------------------------------------------------------
 
   println("\n\n [#1] logical and physical plans \n\n")
@@ -32,7 +30,7 @@ object dfCatalyst extends App {
     join(deptDF, registerDF("dept_id") === deptDF("dept_id")).
     select("emp_id", "salary", "dept_name", "empname").
     filter("salary >= 2000").
-    filter("salary < 6000")
+    filter("salary < 5000")
 
   utils.showPlans(df, show = false)
 
@@ -48,7 +46,7 @@ object dfCatalyst extends App {
     join(deptDF, registerDF("dept_id") === deptDF("dept_id")).
     select("emp_id", "salary", "dept_name", "empname").
     filter("salary >= 2000").
-    filter("salary < 6000")
+    filter("salary < 5000")
 
   //utils.showPlans(cdf, show = false)
 

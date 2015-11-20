@@ -15,7 +15,6 @@ import org.apache.spark.sql.functions._
  */
 
 
-
 object dfTreeTransformationRules extends App {
 
   init.logLevel()
@@ -29,21 +28,27 @@ object dfTreeTransformationRules extends App {
 
   // ---------------------------------------------------------------------------------------
 
-  val df = empDF.
-    select(empDF("emp_id"),upper(lower(empDF("emp_name"))), empDF("salary")).
-    filter("salary > 2000").
-    filter("salary < 5000")
+  // df
+  val df = empDF
+    .join(registerDF, registerDF("emp_id") === empDF("emp_id"))
+    //.select(empDF("emp_id"), registerDF("dept_id"), empDF("emp_name"), empDF("salary"), empDF("age"))
+    .select(empDF("emp_id"), registerDF("dept_id"), upper(lower(empDF("emp_name"))).as("emp_name"), empDF("salary"), empDF("age"))
+    .join(deptDF, registerDF("dept_id") === deptDF("dept_id"))
+    .select("emp_id", "salary", "dept_name", "emp_name")
+    .filter("salary >= 2000")
+    .filter("salary < 5000")
 
-
-  val logicalPlan = df.queryExecution.logical
-  println("\n logicalPlan (provided by Spark): \n" + logicalPlan.numberedTreeString)
+  // ---------------------------------------------------------------------------------------
 
   // analysed
 
   val analyzedPlan = df.queryExecution.analyzed
   println("\n analyzed (provided by Spark): \n" + analyzedPlan.numberedTreeString)
 
-// my rules
+  val optimizedPlan = df.queryExecution.optimizedPlan
+  println("\n optimizedPlan (provided by Spark): \n" + optimizedPlan.numberedTreeString)
+
+  // my rules
 
   // combine filter
   val optimizedPlan1 = RuleCombineFilter(analyzedPlan)
@@ -53,34 +58,10 @@ object dfTreeTransformationRules extends App {
   val optimizedPlan2 = RuleCaseConversionSimplify(optimizedPlan1)
   println("\n optimizedPlan2 (after case conversion simplification): \n" + optimizedPlan2.numberedTreeString)
 
-  // push filter through project
-  val optimizedPlan3 = RulePushFilterThroughProject(optimizedPlan2)
-  println("\n optimizedPlan3 (after push filter through project): \n" + optimizedPlan3.numberedTreeString)
-
-  // push filter through project
-  val optimizedPlan4 = newRule(optimizedPlan3)
-  println("\n optimizedPlan4 (after push filter through project): \n" + optimizedPlan4.numberedTreeString)
-
- //
-
-  //var optimizer: Optimizer = utils.getOptimizer(sqlContext)
-  //optimizer.execute(optimizedPlan4)
-
-
-  df.show()
-  df.printSchema()
-
-  val optimizedPlan = df.queryExecution.optimizedPlan
-  println("\n after optimizedPlan (provided by Spark): \n" + optimizedPlan.numberedTreeString)
-
-
   // ---------------------------------------------------------------------------------------
 
-
-
-
-
   // combine filter
+
   object RuleCombineFilter extends Rule[LogicalPlan]
   {
     override def apply(lp: LogicalPlan): LogicalPlan = lp transform {
@@ -89,28 +70,13 @@ object dfTreeTransformationRules extends App {
   }
 
   // case conversion simplification
+
   object RuleCaseConversionSimplify extends Rule[LogicalPlan]
   {
     override def apply(lp: LogicalPlan): LogicalPlan = lp transform  {
       case q: LogicalPlan => q transformExpressionsUp {
         case Upper(Lower(child)) => Lower(child)
       }
-    }
-  }
-
-  // push filter through project -- simple rule
-  object RulePushFilterThroughProject extends Rule[LogicalPlan]
-  {
-    override def apply(lp: LogicalPlan): LogicalPlan = lp transform  {
-      case Filter(condition, Project(fields, grandChild)) =>
-        Project(fields, Filter(condition, grandChild))
-    }
-  }
-
-  object newRule extends Rule[LogicalPlan]
-  {
-    override def apply(lp: LogicalPlan): LogicalPlan = lp transform  {
-      case Filter(condition, grandChild) => grandChild
     }
   }
 }

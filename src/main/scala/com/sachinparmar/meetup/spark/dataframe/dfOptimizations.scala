@@ -1,21 +1,23 @@
 package com.sachinparmar.meetup.spark.dataframe
 
+import org.apache.spark.sql.functions._
+
 /**
  * Created by sachinparmar on 16/11/15.
  */
 
 
 /*
-*  optimization examples -
+*  default optimizer in catalyst provides many optimization rules like -
 *   1. constant folding
 *   2. projection pruning
 *   3. predicate push down
 *   4. combine filters
-*   5. null propagation
-*   6. Boolean expression simplification
+*   many more .......
  */
 
 object dfOptimizations extends App {
+
   init.logLevel()
 
   val sc = init.sparkContext
@@ -23,87 +25,29 @@ object dfOptimizations extends App {
 
   val dataDir = init.resourcePath
 
-  val (empDF, deptDF, registerDF)  = init.sampleDataFrameForJoin(sqlContext, dataDir)
+  val (empDF, deptDF, registerDF)  = init.sampleDataFrameForJoin(sqlContext, dataDir, show = false)
 
   // ---------------------------------------------------------------------------------------
 
-  // example 1: constant folding
-
-  println("\n== Optimization: Constant Folding ==\n")
-  val df = empDF.
-    filter("1='1'").
-    filter("2=2")
-  utils.showLogicalPlans(df)
-
-  // ---------------------------------------------------------------------------------------
-
-  // example 2: projection pruning
-
-  println("\n== Optimization: Projection Pruning ==\n")
-
-  val df1 = empDF.
-    join(registerDF, registerDF("emp_id") === empDF("emp_id")).
-    select(empDF("emp_id"), deptDF("dept_id"), empDF("emp_name"), empDF("salary")).
-    join(deptDF, registerDF("dept_id") === deptDF("dept_id")).
-    select("emp_id", "salary", "dept_name")
-
-  /*
-                  val df1 = empDF.
-                            join(registerDF, registerDF("emp_id") === empDF("emp_id")).
-     (A:02),(O:04,02) --->  select(empDF("emp_id"), deptDF("dept_id"), empDF("emp_name"), empDF("salary")).
-                            join(deptDF, registerDF("dept_id") === deptDF("dept_id")).
-     (A:00),(O:00)    --->  select("emp_id", "salary", "dept_name")
-   */
-
-  utils.showLogicalPlans(df1)
+  // df
+  val df = empDF
+    .join(registerDF, registerDF("emp_id") === empDF("emp_id"))
+    //.select(empDF("emp_id"), registerDF("dept_id"), empDF("emp_name"), empDF("salary"), empDF("age"))
+    .select(empDF("emp_id"), registerDF("dept_id"), upper(lower(empDF("emp_name"))).as("emp_name"), empDF("salary"), empDF("age"))
+    .join(deptDF, registerDF("dept_id") === deptDF("dept_id"))
+    .select("emp_id", "salary", "dept_name", "emp_name")
+    .filter("salary >= 2000")
+    .filter("salary < 5000")
 
   // ---------------------------------------------------------------------------------------
 
-  // example 3: predicate push down
+  println("\n\n [#4] optimization provided by catalyst \n\n")
 
-  println("\n== Optimization: Predicate Push Down ==\n")
+  val cf = df.
+    filter("1=1")
 
-  val df2 = df1.
-    filter("salary >= 2000")
+  println("\n DF  analyzed : \n\n" +  cf.queryExecution.analyzed.numberedTreeString)
 
-  /*
-                val df2 = empDF.
-                          join(registerDF, registerDF("emp_id") === empDF("emp_id")).
-                          select(empDF("emp_id"), deptDF("dept_id"), empDF("emp_name"), empDF("salary")).
-                          join(deptDF, registerDF("dept_id") === deptDF("dept_id")).
-                          select("emp_id", "salary", "dept_name").
-   (A:00),(O:05)    --->  filter("salary >= 2000")
- */
+  println("\n DF  optimizedPlan : \n\n" +  cf.queryExecution.optimizedPlan.numberedTreeString)
 
- utils.showLogicalPlans(df2)
-
-  // ---------------------------------------------------------------------------------------
-
-  // example 4: combine filters
-
-  println("\n== Optimization: Combine Filters ==\n")
-
-  val df3 = df2.
-    filter("salary < 6000")
-
-  /*
-                val df2 = empDF.
-                          join(registerDF, registerDF("emp_id") === empDF("emp_id")).
-                          select(registerDF("emp_id"), registerDF("dept_id"), empDF("emp_name"), empDF("salary")).
-                          join(deptDF, registerDF("dept_id") === deptDF("dept_id")).
-                          select("emp_id","salary","dept_name").
-   (A:00),(O:05)    --->  filter("salary >= 2000").
-   (A:01),(O:05)    --->  filter("salary < 6000")
- */
-
-  utils.showLogicalPlans(df3)
-
-  // ---------------------------------------------------------------------------------------
-
-
-  // example: null propagation
-  println("\n== Optimization: Null Propagation ==\n")
-
-  // example: Boolean expression simplification
-  println("\n== Optimization: Boolean Expression Simplification ==\n")
 }
