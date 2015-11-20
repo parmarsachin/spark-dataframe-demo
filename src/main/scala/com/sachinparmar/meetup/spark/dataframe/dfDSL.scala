@@ -67,10 +67,10 @@ object dfDSL extends App {
   sqlContext.udf.register("evenUDF", even _)
 
   // udf with df
-  df.selectExpr("id", "evenUDF(id) as even").show()
+  df.selectExpr("emp_id", "evenUDF(emp_id) as even").show()
 
   // udf with sql
   df.registerTempTable("df1Table")
-  val result1 = sqlContext.sql("select id, evenUDF(id) as even from df1Table")
+  val result1 = sqlContext.sql("select emp_id, evenUDF(emp_id) as even from df1Table")
   result1.show()
 }
