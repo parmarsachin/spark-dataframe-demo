@@ -38,7 +38,8 @@ object init {
 
   // sample data path
   def resourcePath: String = {
-    "/Users/sachinparmar/my/work/myGit/spark-dataframe-demo/src/main/resources/"
+    //"/Users/sachinparmar/my/work/myGit/spark-dataframe-demo/src/main/resources/"
+    getClass.getResource("/emp.json").getPath
   }
 
   // sample data frames for demo
